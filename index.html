@@ -218,7 +218,7 @@
             const username = document.getElementById('login-username').value;
             const password = document.getElementById('login-password').value;
 
-            const email = `${username}@nebula.local`;
+            const email = `${username}@nebula.app`;
 
             // Using supabaseClient instead of supabase
             const { data, error } = await supabaseClient.auth.signInWithPassword({
@@ -243,7 +243,7 @@
                 return;
             }
 
-            const email = `${username}@nebula.local`;
+            const email = `${username}@nebula.app`;
 
             // Using supabaseClient
             const { data, error } = await supabaseClient.auth.signUp({
