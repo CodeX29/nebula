@@ -64,10 +64,9 @@
 
         /* --- Chat Interface --- */
         #app-container {
-            display: none; /* Hidden by default */
+            display: none; 
             width: 100%;
             height: 100%;
-            display: flex; /* Flex when active */
         }
 
         .sidebar {
@@ -198,10 +197,11 @@
         const SUPABASE_URL = 'https://prodnylvzjqgyorvbegw.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByb2RueWx2empxZ3lvcnZiZWd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyNDMyMjAsImV4cCI6MjA4ODgxOTIyMH0.tWh2ssi4SHs6rEqdk2Wm3VkrxkbbyRdLJ49JqYcA9dI';
         
-        // THE SECRET KEY ONLY YOU KNOW (For the "Private" feature)
+        // THE SECRET KEY ONLY YOU KNOW
         const ADMIN_SECRET_KEY = "nebula-2024"; 
 
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // FIX: Renamed 'supabase' to 'supabaseClient' to avoid conflict with library
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // --- 2. AUTHENTICATION LOGIC ---
 
@@ -218,10 +218,10 @@
             const username = document.getElementById('login-username').value;
             const password = document.getElementById('login-password').value;
 
-            // Supabase uses email for login, so we append @nebula.local to make it look like an email
             const email = `${username}@nebula.local`;
 
-            const { data, error } = await supabase.auth.signInWithPassword({
+            // Using supabaseClient instead of supabase
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
                 email: email,
                 password: password,
             });
@@ -238,7 +238,6 @@
             const password = document.getElementById('signup-password').value;
             const key = document.getElementById('admin-key').value;
 
-            // SECURITY CHECK: Is the Admin Key correct?
             if (key !== ADMIN_SECRET_KEY) {
                 document.getElementById('auth-error').innerText = "Invalid Admin Key. Access Denied.";
                 return;
@@ -246,11 +245,12 @@
 
             const email = `${username}@nebula.local`;
 
-            const { data, error } = await supabase.auth.signUp({
+            // Using supabaseClient
+            const { data, error } = await supabaseClient.auth.signUp({
                 email: email,
                 password: password,
                 options: {
-                    data: { username: username } // Store username in metadata
+                     data: { username: username } 
                 }
             });
 
@@ -263,7 +263,7 @@
         }
 
         async function logout() {
-            await supabase.auth.signOut();
+            await supabaseClient.auth.signOut();
             location.reload();
         }
 
@@ -275,7 +275,7 @@
             currentUser = user;
             document.getElementById('auth-container').classList.add('hidden');
             document.getElementById('app-container').classList.remove('hidden');
-            document.getElementById('app-container').style.display = 'flex'; // Force flex display
+            document.getElementById('app-container').style.display = 'flex'; 
             
             document.getElementById('current-user-display').innerText = user.email.split('@')[0];
             
@@ -284,7 +284,8 @@
         }
 
         async function loadMessages() {
-            const { data, error } = await supabase
+            // Using supabaseClient
+            const { data, error } = await supabaseClient
                 .from('messages')
                 .select('*, profiles(username)')
                 .order('created_at', { ascending: true });
@@ -304,7 +305,6 @@
             const div = document.createElement('div');
             div.className = `message ${isMe ? 'sent' : 'received'}`;
             
-            // If not me, show username
             const nameTag = !isMe ? `<span class="sender-name">${msg.profiles.username}</span>` : '';
             
             div.innerHTML = `${nameTag}${msg.content}`;
@@ -316,13 +316,13 @@
             const content = input.value.trim();
             if (!content) return;
 
-            const { error } = await supabase
+            // Using supabaseClient
+            const { error } = await supabaseClient
                 .from('messages')
                 .insert([{ content: content, sender_id: currentUser.id }]);
 
             if (!error) {
                 input.value = '';
-                // The realtime subscription will handle adding the message to UI
             } else {
                 console.error("Error sending:", error);
             }
@@ -337,15 +337,12 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        // Realtime Subscription (Like Telegram)
         function subscribeToMessages() {
-            supabase
+            // Using supabaseClient
+            supabaseClient
                 .channel('public:messages')
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
-                    // Fetch the profile info for the new message sender
-                    // (Simplified: In a real app you'd join tables in the subscription)
-                    // For this demo, we just reload messages or append manually if we know the user
-                    loadMessages(); // Simple reload to ensure username is attached
+                    loadMessages(); 
                 })
                 .subscribe();
         }
